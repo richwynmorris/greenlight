@@ -16,8 +16,7 @@ func (app *application) healthCheckHandler(w http.ResponseWriter, r *http.Reques
 
 	err := app.writeJSON(w, http.StatusOK, env, nil)
 	if err != nil {
-		app.logger.Printf(err.Error())
-		http.Error(w, "failed to marshall json data and formulate response", http.StatusBadRequest)
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 }

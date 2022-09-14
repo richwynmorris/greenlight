@@ -16,7 +16,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 	// Parse the params to and integer and check it is a valid integer.
 	id, err := app.readIDParam(r)
 	if err != nil {
-		http.NotFound(w, r)
+		app.resourceNotFoundResponse(w, r)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
 	if err != nil {
-		app.logger.Print(err)
-		http.Error(w, "The server encountered a problem and could not process you request", http.StatusBadRequest)
+		app.serverErrorResponse(w, r, err)
+		return
 	}
 }
