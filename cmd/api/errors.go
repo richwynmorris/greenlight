@@ -19,7 +19,9 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	}
 }
 
-func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request) {
+func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logError(r, err)
+
 	msg := "The server is unable to fulfil this request at this time. Please try again later."
 	app.errorResponse(w, r, http.StatusInternalServerError, msg)
 }
