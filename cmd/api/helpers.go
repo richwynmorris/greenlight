@@ -84,5 +84,12 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		}
 	}
 
+	// If any additional JSON values exists beyond the expected value of one, and the returned error value isn't equal
+	//to io.EOF, then we know the response has more than one JSON value.
+	err = dec.Decode(&struct{}{})
+	if err != io.EOF {
+		return errors.New("body must only contain a single JSON value")
+	}
+
 	return nil
 }
