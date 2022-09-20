@@ -21,7 +21,10 @@ type config struct {
 	port int
 	env  string
 	db   struct {
-		dsn string
+		dsn         string
+		maxOpenConn int
+		maxIdleConn int
+		maxIdleTime string
 	}
 }
 
@@ -38,6 +41,11 @@ func main() {
 	flag.IntVar(&cfg.port, "port", 4000, "API Server Port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
+
+	// Use flags to set database connection pool settings.
+	flag.IntVar(&cfg.db.maxOpenConn, "db-max-open-connections", 25, "Max open connections for database")
+	flag.IntVar(&cfg.db.maxIdleConn, "db-max-idle-connections", 25, "Max idle conections for database")
+	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "Max idle time for database")
 
 	// Parses the flag values and sets them to the config fields.
 	flag.Parse()
@@ -88,6 +96,15 @@ func openDB(cfg config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	parsedTime, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(cfg.db.maxOpenConn)
+	db.SetConnMaxIdleTime(parsedTime)
+	db.SetMaxIdleConns(cfg.db.maxIdleConn)
 
 	// Create a context that will time out after 5 seconds.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
