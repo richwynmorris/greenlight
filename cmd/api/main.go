@@ -11,6 +11,8 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+
+	"richwynmorris.co.uk/internal/data"
 )
 
 // version is a string containing the application version number.
@@ -32,6 +34,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -68,6 +71,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	// Declare a new http-router to dispatch requests to tha application's handlers.
