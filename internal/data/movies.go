@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"time"
 
 	"richwynmorris.co.uk/internal/validator"
@@ -31,4 +32,22 @@ func ValidateMovie(v *validator.Validator, input *Movie) {
 	v.Check(len(input.Genres) >= 1, "genres", "a minimum of one genre must be selected")
 	v.Check(len(input.Genres) <= 5, "genres", "There cannot be more than 5 genres selected")
 	v.Check(validator.Unique(input.Genres), "genres", "genres cannot contain duplicates")
+}
+
+type MovieModel struct {
+	DB *sql.DB
+}
+
+func (m MovieModel) insert(movie *Movie) error {
+	return nil
+}
+
+func (m MovieModel) Get(id int64) (*Movie, error) {
+	return nil, nil
+}
+func (m MovieModel) Update(movie Movie) error {
+	return nil
+}
+func (m MovieModel) Delete(id int64) error {
+	return nil
 }
