@@ -105,7 +105,7 @@ func (m MovieModel) Update(movie Movie) error {
 	err := m.DB.QueryRow(query, args...).Scan(&movie.Version)
 	if err != nil {
 		switch {
-		case errors.Is(err, ErrRecordNotFound):
+		case errors.Is(err, sql.ErrNoRows):
 			return ErrRecordNotFound
 		default:
 			return err
