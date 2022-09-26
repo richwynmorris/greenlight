@@ -84,6 +84,35 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 func (m MovieModel) Update(movie Movie) error {
+	query := `UPDATE movies
+			  SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
+			  WHERE id = $5
+              RETURNING version`
+
+	args := []any{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+		movie.Version,
+	}
+
+	// QueryRow expects to return a single row from the db, if it doesn't it throws and error.
+	// Query row takes two args: the query and the values to be interpolated into the query.
+	// We do this to prevent SQL injection attacks.
+	// We also use the rest syntax to explode the values in the slice.
+	// The Scan method receives the resuelt of the query and copies the return values into the destination argument.
+	err := m.DB.QueryRow(query, args...).Scan(&movie.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrRecordNotFound):
+			return ErrRecordNotFound
+		default:
+			return err
+		}
+	}
+
+	// Return nil as success if update operation performed correctly.
 	return nil
 }
 func (m MovieModel) Delete(id int64) error {
