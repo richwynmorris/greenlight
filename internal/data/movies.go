@@ -149,9 +149,11 @@ func (m MovieModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MovieModel) GetAll() ([]*Movie, error) {
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
 	query := `SELECT id, created_at, title, year, runtime, genres, version
 			  FROM movies
+			  WHERE (LOWER(title) = LOWER($1) OR $1 = '')
+			  AND (genres @> $2 OR $2 = '{}')
 			  ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -159,7 +161,7 @@ func (m MovieModel) GetAll() ([]*Movie, error) {
 
 	var movies []*Movie
 
-	rows, err := m.DB.QueryContext(ctx, query)
+	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres))
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (m MovieModel) GetAll() ([]*Movie, error) {
 			&movie.Title,
 			&movie.Year,
 			&movie.Runtime,
-			pq.Array(movie.Genres),
+			pq.Array(&movie.Genres),
 			&movie.Version,
 		)
 		if err != nil {
