@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"richwynmorris.co.uk/internal/data"
+	"richwynmorris.co.uk/internal/jsonlog"
 )
 
 // version is a string containing the application version number.
@@ -33,7 +34,7 @@ type config struct {
 // application holds the handlers, helpers and middleware to support the application's functionality.
 type application struct {
 	config config
-	logger *log.Logger
+	logger *jsonlog.Logger
 	models data.Models
 }
 
@@ -56,16 +57,16 @@ func main() {
 	/* Initialize a new logger to write messages to the standard out stream. Logger messages with be prefixed with the
 	   time and date.
 	*/
-	logger := log.New(os.Stdout, "", log.LstdFlags)
+	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 
 	db, err := openDB(cfg)
 	if err != nil {
-		logger.Fatalf(err.Error())
+		logger.PrintFatal(err, nil)
 	}
 
 	defer db.Close()
 
-	logger.Printf("database connection pool established")
+	logger.PrintInfo("database connection pool established", nil)
 
 	// Declare instance of application struct with logger and config settings.
 	app := &application{
@@ -84,13 +85,17 @@ func main() {
 		ReadHeaderTimeout: 0,
 		WriteTimeout:      30 * time.Second,
 		IdleTimeout:       time.Minute,
+		ErrorLog:          log.New(logger, "", 0),
 	}
 
 	// Start the server.
-	logger.Printf("Starting %s server on port: %d", cfg.env, cfg.port)
+	logger.PrintInfo("server starting", map[string]string{
+		"addr": srv.Addr,
+		"env":  cfg.env,
+	})
 	err = srv.ListenAndServe()
 	if err != nil {
-		logger.Fatalf(err.Error())
+		logger.PrintFatal(err, nil)
 	}
 }
 

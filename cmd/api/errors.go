@@ -5,10 +5,6 @@ import (
 	"net/http"
 )
 
-func (app *application) logError(r *http.Request, err error) {
-	app.logger.Print(err)
-}
-
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := envelope{"message": message}
 
@@ -48,4 +44,13 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	message := "unable to update the record due to an edit conflict, please try again"
 	app.errorResponse(w, r, http.StatusConflict, message)
+}
+
+// logError receives the request and raised error and uses the custom logger to
+// print the error and the request's details.
+func (app *application) logError(r *http.Request, err error) {
+	app.logger.PrintError(err, map[string]string{
+		"requestUrl":    r.URL.String(),
+		"requestMethod": r.Method,
+	})
 }
