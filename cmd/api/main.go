@@ -4,9 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -29,6 +26,11 @@ type config struct {
 		maxIdleConn int
 		maxIdleTime string
 	}
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
 }
 
 // application holds the handlers, helpers and middleware to support the application's functionality.
@@ -50,6 +52,11 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConn, "db-max-open-connections", 25, "Max open connections for database")
 	flag.IntVar(&cfg.db.maxIdleConn, "db-max-idle-connections", 25, "Max idle conections for database")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "Max idle time for database")
+
+	// User flags to set rate limiting options.
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "rate limiter maximum requests per second")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "rate limiter maximum burst requests per second")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "rate limiter enabled")
 
 	// Parses the flag values and sets them to the config fields.
 	flag.Parse()
@@ -75,28 +82,11 @@ func main() {
 		models: data.NewModels(db),
 	}
 
-	// Declare a new http-router to dispatch requests to tha application's handlers.
-	router := app.routes()
-
-	srv := &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.port),
-		Handler:           router,
-		ReadTimeout:       10 * time.Second,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       time.Minute,
-		ErrorLog:          log.New(logger, "", 0),
-	}
-
-	// Start the server.
-	logger.PrintInfo("server starting", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	err = srv.ListenAndServe()
+	err = app.serve()
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
+
 }
 
 func openDB(cfg config) (*sql.DB, error) {
