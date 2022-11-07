@@ -127,7 +127,7 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	defer cancel()
 
 	// Query the db and pass the returned values to the user model.
-	err := m.DB.QueryRowContext(ctx, email).Scan(
+	err := m.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.CreatedAt,
 		&user.Name,
@@ -154,7 +154,7 @@ func (m UserModel) Update(user *User) error {
 			 UPDATE users
 			 SET name = $1, email = $2, password_hash = $3, activated = $4, id = $5, version = $6
  			 WHERE id = $5 AND version = $6
-			 RETURNING version'
+			 RETURNING version
 			`
 
 	// create with a timeout to query to the db.
@@ -162,7 +162,7 @@ func (m UserModel) Update(user *User) error {
 	defer cancel()
 
 	args := []any{user.Name, user.Email, user.Password.hash, user.Activated, user.ID, user.Version}
-	
+
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
 		switch {
