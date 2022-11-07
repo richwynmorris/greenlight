@@ -22,6 +22,8 @@ type Movie struct {
 	Version   int32     `json:"version"`
 }
 
+// ===================== MOVIE VALIDATION ===============================
+
 func ValidateMovie(v *validator.Validator, input *Movie) {
 	v.Check(input.Title != "", "title", "title must be provided")
 	v.Check(len(input.Title) <= 500, "title", "title must not be more than 500 bytes long")
@@ -38,6 +40,8 @@ func ValidateMovie(v *validator.Validator, input *Movie) {
 	v.Check(len(input.Genres) <= 5, "genres", "There cannot be more than 5 genres selected")
 	v.Check(validator.Unique(input.Genres), "genres", "genres cannot contain duplicates")
 }
+
+// =========================== MOVIE MODEL FUNCTIONALITY =================================
 
 type MovieModel struct {
 	DB *sql.DB
