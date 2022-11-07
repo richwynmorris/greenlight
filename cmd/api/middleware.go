@@ -39,7 +39,9 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		clients = make(map[string]*client)
 	)
 
-	// initiate a background goroutine which removes old entries from the clients map, once every minute.
+	// initiate a background goroutine which removes old entries from the clients map, once every minute. This go routine
+	// is only initiated the first time the middleware is run and continues on an infinite loop in the background while the
+	// application is active.
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -73,11 +75,11 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		if !found {
 			clients[ip] = &client{limiter: rate.NewLimiter(2, 4)}
 		}
- 
+
 		clients[ip].lastSeen = time.Now()
 
 		// If the number of tokens in the limiter bucket is empty, unlock the mutex and return an error
-		if !clients[ip].Allow() {
+		if !clients[ip].limiter.Allow() {
 			mu.Unlock()
 			app.rateLimitExceededResponse(w, r)
 			return
