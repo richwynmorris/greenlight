@@ -60,34 +60,37 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	}()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract client's IP address from the request.
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
+		// Check if rate limiting is enabled
+		if app.config.limiter.enabled {
+			// Extract client's IP address from the request.
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
 
-		// lock the mutex to prevent the code being run concurrently.
-		mu.Lock()
+			// lock the mutex to prevent the code being run concurrently.
+			mu.Lock()
 
-		// If we don't have the ip address already, create a new limiter for it.
-		_, found := clients[ip]
-		if !found {
-			clients[ip] = &client{limiter: rate.NewLimiter(2, 4)}
-		}
+			// If we don't have the ip address already, create a new limiter for it.
+			_, found := clients[ip]
+			if !found {
+				clients[ip] = &client{limiter: rate.NewLimiter(rate.Limit(app.config.limiter.rps), app.config.limiter.burst)}
+			}
 
-		clients[ip].lastSeen = time.Now()
+			clients[ip].lastSeen = time.Now()
 
-		// If the number of tokens in the limiter bucket is empty, unlock the mutex and return an error
-		if !clients[ip].limiter.Allow() {
+			// If the number of tokens in the limiter bucket is empty, unlock the mutex and return an error
+			if !clients[ip].limiter.Allow() {
+				mu.Unlock()
+				app.rateLimitExceededResponse(w, r)
+				return
+			}
+
+			// unlock the mutex. We don't defer this as the mutex would only then be unlocked once all handlers downstream
+			// of this middleware have also returned.
 			mu.Unlock()
-			app.rateLimitExceededResponse(w, r)
-			return
 		}
-
-		// unlock the mutex. We don't defer this as the mutex would only then be unlocked once all handlers downstream
-		// of this middleware have also returned.
-		mu.Unlock()
 
 		next.ServeHTTP(w, r)
 	})
