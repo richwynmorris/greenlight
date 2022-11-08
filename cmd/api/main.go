@@ -11,6 +11,7 @@ import (
 
 	"richwynmorris.co.uk/internal/data"
 	"richwynmorris.co.uk/internal/jsonlog"
+	"richwynmorris.co.uk/internal/mailer"
 )
 
 // version is a string containing the application version number.
@@ -31,6 +32,13 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // application holds the handlers, helpers and middleware to support the application's functionality.
@@ -38,6 +46,7 @@ type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
+	mailer mailer.Mailer
 }
 
 func main() {
@@ -57,6 +66,13 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "rate limiter maximum burst requests per second")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "rate limiter enabled")
+
+	// SMTP flags to be used for mailer settings
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP Host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP Port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "ce5e0855aa2d85", "SMTP Username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "7b1c2358f92bd9", "SMTP Password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@greenlight.richmorris.net>", "SMTP Sender")
 
 	// Parses the flag values and sets them to the config fields.
 	flag.Parse()
@@ -80,6 +96,13 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(
+			cfg.smtp.host,
+			cfg.smtp.port,
+			cfg.smtp.username,
+			cfg.smtp.password,
+			cfg.smtp.sender,
+		),
 	}
 
 	err = app.serve()

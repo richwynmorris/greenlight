@@ -133,3 +133,15 @@ func (app *application) readInts(qs url.Values, key string, defaultValue int, v 
 
 	return i
 }
+
+func (app *application) background(fn func()) {
+	go func() {
+		defer func() {
+			err := recover()
+			if err != nil {
+				app.logger.PrintError(fmt.Errorf("%s", err), nil)
+			}
+		}()
+		fn()
+	}()
+}
