@@ -135,13 +135,22 @@ func (app *application) readInts(qs url.Values, key string, defaultValue int, v 
 }
 
 func (app *application) background(fn func()) {
+	// Increment the waitgroup to track the total number of current go routines.
+	app.wg.Add(1)
+
 	go func() {
+		// Decrement the waitgroup after the function has returned.
+		defer app.wg.Done()
+
+		// handle graceful shutdown if any third partys raise a panic.
 		defer func() {
 			err := recover()
 			if err != nil {
 				app.logger.PrintError(fmt.Errorf("%s", err), nil)
 			}
 		}()
+
+		// Launch passed in go routine.
 		fn()
 	}()
 }

@@ -42,7 +42,19 @@ func (app *application) serve() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
-		shutdownErr <- srv.Shutdown(ctx)
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownErr <- srv.Shutdown(ctx)
+		}
+
+		app.logger.PrintInfo("completing background tasks", map[string]string{
+			"addr": srv.Addr,
+		})
+
+		// Wait for all background go routines to complete, once done, send a nil to the channel to indicate that
+		// the shutdown of the go routines was a success.
+		app.wg.Wait()
+		shutdownErr <- nil
 	}()
 
 	// Start the server.
