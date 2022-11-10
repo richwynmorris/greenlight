@@ -59,3 +59,8 @@ func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http
 	message := "rate limit exceeded. Please try again later."
 	app.errorResponse(w, r, http.StatusTooManyRequests, message)
 }
+
+func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *http.Request) {
+	message := "invalid credentials were provided. Please try agan later."
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
