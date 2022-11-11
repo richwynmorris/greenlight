@@ -34,6 +34,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	err = user.Password.Set(input.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
+		return
 	}
 
 	// Validate the user's account details.
@@ -54,6 +55,13 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
+		return
+	}
+
+	// Add read permission for all new users.
+	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 
