@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -15,9 +16,10 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.resourceNotFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	//=================================== HEALTH ====================================================
+	//=================================== HEALTH & METRICS ====================================================
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
+	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	//================================== MOVIES ======================================================
 
@@ -39,5 +41,5 @@ func (app *application) routes() http.Handler {
 	// =============================== MIDDLEWARE ===================================================
 
 	// Panic Recovery; Enable Cors; Rate Limiting; Authentication.
-	return app.recoverPanic(app.enableCORS(app.rateLimit(app.authentication(router))))
+	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authentication(router)))))
 }
