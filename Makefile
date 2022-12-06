@@ -29,8 +29,8 @@ run/api:
 	@go run ./cmd/api -db-dsn=${GREENLIGHT_DB_DSN}
 
 ## db/sql: connect to the database using psql
-.PHONY: db/greenlight
-db/greenlight:
+.PHONY: db/psql
+db/psql:
 	@psql ${GREENLIGHT_DB_DSN}
 
 ## db/migrations/new name=$1: create a new database migration
@@ -53,10 +53,7 @@ db/migrations/up: confirm
 
 ## audit: tidy dependencies and format, vet and test all code
 .PHONY: audit
-audit:
-	@echo 'Tidying and verifying module dependencies...'
-	go mod tidy
-	go mod verify
+audit: vendor
 	@echo 'Formatting Code...'
 	go fmt ./...
 	@echo 'Vetting code...'
@@ -64,3 +61,12 @@ audit:
 	staticcheck ./...
 	@echo 'Running tests...'
 	go test -race -vet=off ./...
+
+## vendor: tidy and vendor dependencies
+.PHONY: vendor
+vendor:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
+	@echo 'Vendoring dependencies...'
+	go mod vendor
