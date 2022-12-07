@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -16,10 +17,13 @@ import (
 	"richwynmorris.co.uk/internal/data"
 	"richwynmorris.co.uk/internal/jsonlog"
 	"richwynmorris.co.uk/internal/mailer"
+	"richwynmorris.co.uk/internal/vcs"
 )
 
 // version is a string containing the application version number.
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 // config is used to manage the configuration settings of the application.
 type config struct {
@@ -88,8 +92,15 @@ func main() {
 		return nil
 	})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	// Parses the flag values and sets them to the config fields.
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("version:`\t%s\n", version)
+		os.Exit(0)
+	}
 
 	/* Initialize a new logger to write messages to the standard out stream. Logger messages with be prefixed with the
 	   time and date.
